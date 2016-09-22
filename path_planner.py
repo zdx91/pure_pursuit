@@ -32,4 +32,4 @@ class PathPlanner(object):
         for waypoint in waypoint_list:
             res.append(Waypoint(waypoint))
 
-        return res
+        return res, np.array(waypoint)

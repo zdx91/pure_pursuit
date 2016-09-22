@@ -79,14 +79,23 @@ class PurePursuit(object):
         self.look_ahead_distance = look_ahead_distance
         # goal_point is in 1D along the path, parametrized by the distance to the first waypoint
         self.goal_point = 0
-        self.goal_point_moveup_dist = 2
+        self.goal_point_moveup_dist = 0.5
         self.line_segment, self.total_path_len = self._parametrize_path()
 
     def control(self, robot_pose):
 
-        steer = 0
+        self._update_goal_point(robot_pose)
+        goal_point_in_local_frame = self._transform_goal_point_to_robot_frame(robot_pose)
+        dist_to_goal_point = np.linalg.norm(goal_point_in_local_frame)
 
-        return steer
+        if dist_to_goal_point < 1e-10:
+            # this means we have reached goal, no control needed
+            return 0, 0
+        else:
+            steer = self.desired_linear_velocity * 2.0 * goal_point_in_local_frame[0] / (dist_to_goal_point)
+            logging.debug('Planned steer angle is {}'.format(steer))
+
+            return self.desired_linear_velocity, steer
 
     def _update_goal_point(self, robot_pose):
         """
@@ -149,10 +158,11 @@ class PurePursuit(object):
         goal_point_position_in_global_frame = self.find_position_on_path(self.goal_point)
         rotation_matrix = np.array([[np.cos(rotation_angle), -np.sin(rotation_angle), robot_position[0]],
                                     [np.sin(rotation_angle), np.cos(rotation_angle), robot_position[1]],
-                                    0,                       0,                       1])
+                                    [0,                       0,                       1]])
 
-        return np.linalg.inv(rotation_matrix) * np.append(goal_point_position_in_global_frame, 1.0)
+        coordinate_in_robot_frame = np.dot(np.linalg.inv(rotation_matrix), np.append(goal_point_position_in_global_frame, 1.0))
 
+        return coordinate_in_robot_frame[:2]
 
 if __name__ == '__main__':
     waypoint_list = [[0, 0], [1, 1], [2, 2], [3, 3]]

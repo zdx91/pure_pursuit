@@ -84,7 +84,7 @@ class Robot(object):
     ):
         x, y, theta = self.pose.position[0], self.pose.position[1], self.pose.heading
 
-        self.trace.append([x, y])
+        self.trace.append(self.pose.position)
 
         # update model
         if np.abs(self.angular_velocity) < eps:
@@ -161,6 +161,7 @@ class World(object):
         pygame.display.set_caption('World')
 
         screen.fill((255, 255, 255))
+
         pygame.display.flip()
         return screen
 
@@ -186,11 +187,26 @@ class World(object):
         for obstacle in self.obstacles:
             obstacle.update(dt)
 
-    def draw(self, screen):
+    def draw(self, screen, waypoints):
         screen.fill((255, 255, 255))
         self.robot.draw(screen, self.px2m)
         for obstacle in self.obstacles:
             obstacle.draw(screen, self.px2m)
+
+        # drawwaypoints
+        waypoint_positions = []
+        for waypoint in waypoints:
+            waypoint_positions.append(waypoint.position)
+
+        # draw waypoints
+        if waypoint_positions:
+            pygame.draw.lines(
+                screen,
+                [255, 0, 0],
+                False,
+                np.int32(np.array(waypoint_positions) * self.px2m)
+            )
+
         pygame.display.flip()
 
     def get_snapshot(self):
