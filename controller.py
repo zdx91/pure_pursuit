@@ -79,7 +79,7 @@ class PurePursuit(object):
         self.look_ahead_distance = look_ahead_distance
         # goal_point is in 1D along the path, parametrized by the distance to the first waypoint
         self.goal_point = 0
-        self.goal_point_moveup_dist = 0.5
+        self.goal_point_moveup_dist = 0.1
         self.line_segment, self.total_path_len = self._parametrize_path()
 
     def control(self, robot_pose):
@@ -104,9 +104,69 @@ class PurePursuit(object):
         :return:
         """
 
-        while np.linalg.norm(self.find_position_on_path(self.goal_point) - robot_pose.position) < \
-            self.look_ahead_distance or self.goal_point < self.total_path_len:
-            self.goal_point += self.goal_point_moveup_dist
+        # start searching the goal point from the nearest point on the path to the current robot position
+        goal_point_search_s_coordinate = self._find_nearest_path_point(robot_pose)
+        goal_point_search_position = self.find_position_on_path(goal_point_search_s_coordinate)
+        logging.debug('nearest point to the robot on the path is {}'.format(goal_point_search_position))
+
+        while np.linalg.norm(goal_point_search_position - robot_pose.position) < self.look_ahead_distance:
+            if goal_point_search_s_coordinate + self.goal_point_moveup_dist > self.total_path_len:
+                break
+            else:
+                goal_point_search_s_coordinate += self.goal_point_moveup_dist
+                goal_point_search_position = self.find_position_on_path(goal_point_search_s_coordinate)
+
+        self.goal_point = goal_point_search_s_coordinate
+        logging.debug('Updated goal point is {}, dist between goal point and robot position is {}, controller '
+                      'look_ahead_distance is {}'.format(goal_point_search_position, np.linalg.norm(goal_point_search_position - robot_pose.position), self.look_ahead_distance))
+
+    def _find_nearest_path_point(self, robot_pose):
+        """
+        Find the nearest path point to the robot
+        """
+
+        """Parametrize the line by p0 = t*p1 + (1-t)p2, and let p3 = robot_pose.position, then (p3 - p0) is perpendicular
+           to (p2-p1)
+        """
+        nearest_dist = float('inf')
+
+        # this is the s coordinate of the nearest point, we parametrize any point on a path by f(s), s is the length
+        # along the path to the starting point
+        nearest_point_s_coordinate = 0
+
+        # the distance from the starting point to the curr line segment, that is, the total length of the previous line
+        # segments
+        dist_to_curr_line_segment = 0
+        for index, start_waypoint in enumerate(self.waypoints):
+            if index < len(self.waypoints) - 1:
+                end_waypoint = self.waypoints[index + 1]
+                line_len = np.linalg.norm(end_waypoint.position - start_waypoint.position)
+
+                nearest_dist_to_curr_line = np.linalg.norm(robot_pose.position - start_waypoint.position)
+
+                # s coordinate of the nearest point on the current line segment to the robot position
+                curr_line_segment_nearest_point_s_coordinate = dist_to_curr_line_segment
+                if np.linalg.norm(robot_pose.position - end_waypoint.position) < nearest_dist_to_curr_line:
+                    nearest_dist_to_curr_line = np.linalg.norm(robot_pose.position - end_waypoint.position)
+                    curr_line_segment_nearest_point_s_coordinate = dist_to_curr_line_segment + line_len
+
+                if line_len > 1e-10:
+                    t = (-1.0) * np.dot(robot_pose.position - start_waypoint.position,
+                                 start_waypoint.position - end_waypoint.position) / line_len
+                    if 0 < t < 1:
+                        perpendicular_point = t * end_waypoint.position + (1 - t) * start_waypoint.position
+                        if np.linalg.norm(robot_pose.position - perpendicular_point) < nearest_dist_to_curr_line:
+                            nearest_dist_to_curr_line = np.linalg.norm(robot_pose.position - perpendicular_point)
+                            curr_line_segment_nearest_point_s_coordinate = dist_to_curr_line_segment + \
+                                                                         np.linalg.norm(start_waypoint.position - perpendicular_point)
+
+                if nearest_dist_to_curr_line < nearest_dist:
+                    nearest_dist = nearest_dist_to_curr_line
+                    nearest_point_s_coordinate = curr_line_segment_nearest_point_s_coordinate
+
+                dist_to_curr_line_segment += line_len
+
+        return nearest_point_s_coordinate
 
     def find_position_on_path(self, length_moved):
         """

@@ -16,7 +16,7 @@ LogUtil.set_up_logging('PurePursuit.txt')
 start_pose = Pose([1.0, 1.0], np.pi / 4.0)
 world = World(start_pose=start_pose)
 # timestep for world update
-dt = 0.05
+dt = 0.1
 goal_tolerance = 0.25
 
 # initialize planner and controller
@@ -26,7 +26,7 @@ waypoints, goal = PathPlanner.create_waypoints(waypoint_list)
 
 max_linear_velocity = 1
 max_angular_velocity = np.pi / 3.0
-look_ahead_dist = 1
+look_ahead_dist = 0.5
 controller = PurePursuit(waypoints, max_linear_velocity, max_angular_velocity, look_ahead_dist)
 
 # init pygame screen for visualization

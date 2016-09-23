@@ -202,9 +202,10 @@ class World(object):
         if waypoint_positions:
             pygame.draw.lines(
                 screen,
-                [255, 0, 0],
+                (0, 0, 0),
                 False,
-                np.int32(np.array(waypoint_positions) * self.px2m)
+                np.int32(np.array(waypoint_positions) * self.px2m,
+                width=2)
             )
 
         pygame.display.flip()
