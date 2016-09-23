@@ -3,7 +3,7 @@
 Use pure pursuit controller to control a differential drive robot to follow a set of waypoints
 """
 
-from world import World, Pose
+from world import World, Pose, Robot
 import numpy as np
 from time import sleep
 from path_planner import PathPlanner
@@ -13,16 +13,16 @@ from controller import PurePursuit, LogUtil
 LogUtil.set_up_logging('PurePursuit.txt')
 
 # init world
-start_pose = Pose([1.0, 1.0], np.pi / 4.0)
-world = World(start_pose=start_pose)
+world = World()
 # timestep for world update
 dt = 0.1
 goal_tolerance = 0.25
 
 # initialize planner and controller
 # waypoints, goal = PathPlanner.plan(world, 10)
-waypoint_list = [[1, 1], [5, 5], [8, 8]]
+waypoint_list = [[4, 6], [6, 6]]
 waypoints, goal = PathPlanner.create_waypoints(waypoint_list)
+world.robot = Robot(Pose(waypoints[0].position))
 
 max_linear_velocity = 1
 max_angular_velocity = np.pi / 3.0

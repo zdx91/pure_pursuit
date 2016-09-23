@@ -101,7 +101,7 @@ class Robot(object):
         if theta > math.pi:
             theta -= 2 * math.pi
         elif theta < -1.0 * math.pi:
-            theta += 2 *math.pi
+            theta += 2 * math.pi
 
         self.pose.position = np.array([x, y])
         self.pose.heading = theta
@@ -140,13 +140,12 @@ class World(object):
     def __init__(
         self,
         world_size=[10.0, 10.0],
-        start_pose=Pose([1.0, 1.0], 0.0),
+        robot = None,
         px2m=100
     ):
         self.size = np.array(world_size)
+        self.robot = robot
         self.px2m = px2m
-        self.start_pose = start_pose
-        self.robot = Robot(start_pose)
         self.obstacles = []
 
     def set_obstacles(self, obstacles):

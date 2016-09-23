@@ -152,7 +152,7 @@ class PurePursuit(object):
 
                 if line_len > 1e-10:
                     t = (-1.0) * np.dot(robot_pose.position - start_waypoint.position,
-                                 start_waypoint.position - end_waypoint.position) / line_len
+                                 start_waypoint.position - end_waypoint.position) / (line_len * line_len)
                     if 0 < t < 1:
                         perpendicular_point = t * end_waypoint.position + (1 - t) * start_waypoint.position
                         if np.linalg.norm(robot_pose.position - perpendicular_point) < nearest_dist_to_curr_line:
@@ -226,7 +226,7 @@ class PurePursuit(object):
 
 if __name__ == '__main__':
     waypoint_list = [[0, 0], [1, 1], [2, 2], [3, 3]]
-    waypoints = PathPlanner.create_waypoints(waypoint_list)
+    waypoints, goal = PathPlanner.create_waypoints(waypoint_list)
     controller = PurePursuit(waypoints, 10, 5, 5)
 
     LogUtil.set_up_logging('PurePursuit.txt')
