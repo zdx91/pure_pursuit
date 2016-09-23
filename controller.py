@@ -92,7 +92,7 @@ class PurePursuit(object):
             # this means we have reached goal, no control needed
             return 0, 0
         else:
-            steer = self.desired_linear_velocity * 2.0 * goal_point_in_local_frame[0] / (dist_to_goal_point)
+            steer = self.desired_linear_velocity * 2.0 * goal_point_in_local_frame[0] / (dist_to_goal_point * dist_to_goal_point)
             logging.debug('Planned steer angle is {}'.format(steer))
 
             return self.desired_linear_velocity, steer
@@ -106,7 +106,7 @@ class PurePursuit(object):
 
         # start searching the goal point from the nearest point on the path to the current robot position
         goal_point_search_s_coordinate = self._find_nearest_path_point(robot_pose)
-        goal_point_search_position = self.find_position_on_path(goal_point_search_s_coordinate)
+        goal_point_search_position = self._find_position_on_path(goal_point_search_s_coordinate)
         logging.debug('nearest point to the robot on the path is {}'.format(goal_point_search_position))
 
         while np.linalg.norm(goal_point_search_position - robot_pose.position) < self.look_ahead_distance:
@@ -114,7 +114,7 @@ class PurePursuit(object):
                 break
             else:
                 goal_point_search_s_coordinate += self.goal_point_moveup_dist
-                goal_point_search_position = self.find_position_on_path(goal_point_search_s_coordinate)
+                goal_point_search_position = self._find_position_on_path(goal_point_search_s_coordinate)
 
         self.goal_point = goal_point_search_s_coordinate
         logging.debug('Updated goal point is {}, dist between goal point and robot position is {}, controller '
@@ -168,7 +168,7 @@ class PurePursuit(object):
 
         return nearest_point_s_coordinate
 
-    def find_position_on_path(self, length_moved):
+    def _find_position_on_path(self, length_moved):
         """
         Parametrize the path using the length moved along the path
         :return:
@@ -215,7 +215,7 @@ class PurePursuit(object):
         rotation_angle = robot_pose.heading
         robot_position = robot_pose.position
 
-        goal_point_position_in_global_frame = self.find_position_on_path(self.goal_point)
+        goal_point_position_in_global_frame = self._find_position_on_path(self.goal_point)
         rotation_matrix = np.array([[np.cos(rotation_angle), -np.sin(rotation_angle), robot_position[0]],
                                     [np.sin(rotation_angle), np.cos(rotation_angle), robot_position[1]],
                                     [0,                       0,                       1]])
@@ -232,5 +232,5 @@ if __name__ == '__main__':
     LogUtil.set_up_logging('PurePursuit.txt')
     LogUtil.log_list(controller.line_segment, 'dist to line seg')
 
-    logging.info('position is {}'.format(controller.find_position_on_path(np.math.sqrt(3))))
+    logging.info('position is {}'.format(controller._find_position_on_path(np.math.sqrt(3))))
     print(Util.find_insert_place(range(10), 10))
