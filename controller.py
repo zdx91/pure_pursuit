@@ -154,8 +154,12 @@ class PurePursuit(object):
         if abs(self.goal_point - self.total_path_len) <= 1e-1:
             self.is_goal_point_reached = True
 
-        logging.debug('Updated goal point: {}, dist between goal point and robot position: {}, controller '
-                      'look_ahead_distance: {}'.format(goal_point_search_position, np.linalg.norm(goal_point_search_position - robot_pose.position), self.look_ahead_distance))
+        logging.debug('Updated goal point: s {}, cartesian {}, robot position: {}'.format(self.goal_point,
+                                                                                          goal_point_search_position,
+                                                                                          robot_pose.position))
+        dist_between_goal_robot = np.linalg.norm(goal_point_search_position - robot_pose.position)
+        logging.warning('Dist between goal point and robot position {}, look_ahead_distance {}'.format(
+            dist_between_goal_robot, self.look_ahead_distance))
 
     def _find_nearest_path_point(self, robot_pose):
         """
