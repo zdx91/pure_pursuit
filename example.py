@@ -32,7 +32,6 @@ controller = PurePursuit(waypoints, max_linear_velocity, max_angular_velocity, l
 # init pygame screen for visualization
 screen = world.init_screen()
 
-print 'Running dynamic obstacles world'
 while True:
     # collision testing
     if world.in_collision():
