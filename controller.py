@@ -80,7 +80,7 @@ class PurePursuit(object):
         self.look_ahead_distance = look_ahead_distance
         # goal_point is in 1D along the path, parametrized by the distance to the first waypoint
         self.goal_point = 0
-        self.goal_point_moveup_dist = 0.1
+        self.goal_point_moveup_dist = 0.01
         self.is_goal_point_reached = False
         self.line_segment, self.total_path_len = self._parametrize_path()
 
@@ -101,6 +101,7 @@ class PurePursuit(object):
                 return 0, 0
             else:
                 steer = self.desired_linear_velocity * 2.0 * goal_point_in_local_frame[0] / (dist_to_goal_point * dist_to_goal_point)
+                steer = self.max_angular_velocity if steer > self.max_angular_velocity else steer
 
                 logging.debug('Planned control: linear {}, angular {}, pure pursuit controller'.format(self.desired_linear_velocity, steer))
                 return self.desired_linear_velocity, steer
@@ -120,6 +121,7 @@ class PurePursuit(object):
 
                 circular_move_radius = np.linalg.norm(vec_to_goal) / 2.0 / np.cos(abs(abs(angle_diff) - math.pi / 2.0))
                 planned_steer = self.desired_linear_velocity / circular_move_radius * (angle_diff / abs(angle_diff))
+                planned_steer = self.max_angular_velocity if planned_steer > self.max_angular_velocity else planned_steer
 
                 logging.debug('Planned control: linear {}, angular {}, robot in neighborhood of goal'.format(self.desired_linear_velocity, planned_steer))
                 return self.desired_linear_velocity, planned_steer

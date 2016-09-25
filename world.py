@@ -192,12 +192,16 @@ class World(object):
         for obstacle in self.obstacles:
             obstacle.draw(screen, self.px2m)
 
-        # drawwaypoints
+        # draw waypoints
         waypoint_positions = []
         for waypoint in waypoints:
             waypoint_positions.append(waypoint.position)
+            pygame.draw.circle(screen,
+                               (0, 0, 0),
+                                np.int32(np.array(waypoint.position) * self.px2m),
+                                3)
 
-        # draw waypoints
+        # draw lines connectting waypoints
         if waypoint_positions:
             pygame.draw.lines(
                 screen,
