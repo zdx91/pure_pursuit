@@ -5,6 +5,7 @@ import abc
 import numpy as np
 import logging
 from path_planner import PathPlanner
+import math
 
 
 class LogUtil(object):
@@ -80,34 +81,64 @@ class PurePursuit(object):
         # goal_point is in 1D along the path, parametrized by the distance to the first waypoint
         self.goal_point = 0
         self.goal_point_moveup_dist = 0.1
+        self.is_goal_point_reached = False
         self.line_segment, self.total_path_len = self._parametrize_path()
 
-    def control(self, robot_pose):
+    def control(self, robot):
 
-        self._update_goal_point(robot_pose)
-        goal_point_in_local_frame = self._transform_goal_point_to_robot_frame(robot_pose)
-        dist_to_goal_point = np.linalg.norm(goal_point_in_local_frame)
+        robot_pose = robot.pose
+        logging.debug('************************************')
+        logging.debug('Is robot near goal point? {}'.format(self.is_goal_point_reached))
+        if not self.is_goal_point_reached:
+            # if goal point not reached, use pure pursuit controller
+            self._update_goal_point(robot_pose)
+            goal_point_in_local_frame = self._transform_goal_point_to_robot_frame(robot_pose)
+            dist_to_goal_point = np.linalg.norm(goal_point_in_local_frame)
 
-        if dist_to_goal_point < 1e-10:
-            # this means we have reached goal, no control needed
-            return 0, 0
+            if dist_to_goal_point < 1e-10:
+                # this means we have reached goal, no control needed
+                logging.debug('Planned control: linear {}, angular {}, robot reaches goal'.format(0, 0))
+                return 0, 0
+            else:
+                steer = self.desired_linear_velocity * 2.0 * goal_point_in_local_frame[0] / (dist_to_goal_point * dist_to_goal_point)
+
+                logging.debug('Planned control: linear {}, angular {}, pure pursuit controller'.format(self.desired_linear_velocity, steer))
+                return self.desired_linear_velocity, steer
         else:
-            steer = self.desired_linear_velocity * 2.0 * goal_point_in_local_frame[0] / (dist_to_goal_point * dist_to_goal_point)
-            logging.debug('Planned steer angle is {}'.format(steer))
+            # if goal point reached, do not use pure pursuit anymore
+            goal_pos = self._find_position_on_path(self.total_path_len)
+            robot_position = robot_pose.position
+            theta = robot_pose.heading
 
-            return self.desired_linear_velocity, steer
+            vec_to_goal = goal_pos - robot_position
+            vec_to_goal_angle = math.atan2(vec_to_goal[1], vec_to_goal[0])
+
+            angle_diff = vec_to_goal_angle - theta
+            if abs(angle_diff) > 1e-10:
+                if abs(angle_diff) > np.pi:
+                    angle_diff = (-1.0) * angle_diff / abs(angle_diff) * (2.0 * math.pi - abs(angle_diff))
+
+                circular_move_radius = np.linalg.norm(vec_to_goal) / 2.0 / np.cos(abs(abs(angle_diff) - math.pi / 2.0))
+                planned_steer = self.desired_linear_velocity / circular_move_radius * (angle_diff / abs(angle_diff))
+
+                logging.debug('Planned control: linear {}, angular {}, robot in neighborhood of goal'.format(self.desired_linear_velocity, planned_steer))
+                return self.desired_linear_velocity, planned_steer
+            else:
+                # current robot heading is towards goal postion, move to there directly
+                logging.debug('Planned control: linear {}, angular {}, robot heading points towards goal'.format(self.desired_linear_velocity, 0))
+                return self.desired_linear_velocity, 0
 
     def _update_goal_point(self, robot_pose):
         """
         Find goal point on the path
         :param robot_pose:
-        :return:
+        :return: true if goal point reaches end of the path
         """
 
         # start searching the goal point from the nearest point on the path to the current robot position
         goal_point_search_s_coordinate = self._find_nearest_path_point(robot_pose)
         goal_point_search_position = self._find_position_on_path(goal_point_search_s_coordinate)
-        logging.debug('nearest point to the robot on the path is {}'.format(goal_point_search_position))
+        logging.debug('nearest point on the path to robot: {}'.format(goal_point_search_position))
 
         while np.linalg.norm(goal_point_search_position - robot_pose.position) < self.look_ahead_distance:
             if goal_point_search_s_coordinate + self.goal_point_moveup_dist > self.total_path_len:
@@ -117,8 +148,12 @@ class PurePursuit(object):
                 goal_point_search_position = self._find_position_on_path(goal_point_search_s_coordinate)
 
         self.goal_point = goal_point_search_s_coordinate
-        logging.debug('Updated goal point is {}, dist between goal point and robot position is {}, controller '
-                      'look_ahead_distance is {}'.format(goal_point_search_position, np.linalg.norm(goal_point_search_position - robot_pose.position), self.look_ahead_distance))
+
+        if abs(self.goal_point - self.total_path_len) <= 1e-1:
+            self.is_goal_point_reached = True
+
+        logging.debug('Updated goal point: {}, dist between goal point and robot position: {}, controller '
+                      'look_ahead_distance: {}'.format(goal_point_search_position, np.linalg.norm(goal_point_search_position - robot_pose.position), self.look_ahead_distance))
 
     def _find_nearest_path_point(self, robot_pose):
         """
@@ -229,8 +264,5 @@ if __name__ == '__main__':
     waypoints, goal = PathPlanner.create_waypoints(waypoint_list)
     controller = PurePursuit(waypoints, 10, 5, 5)
 
-    LogUtil.set_up_logging('PurePursuit.txt')
-    LogUtil.log_list(controller.line_segment, 'dist to line seg')
-
-    logging.info('position is {}'.format(controller._find_position_on_path(np.math.sqrt(3))))
-    print(Util.find_insert_place(range(10), 10))
+    print('Test find position based on s coordinate, position is {}'.format(controller._find_position_on_path(np.math.sqrt(3))))
+    print('Test binary search insertion place function: insertion place is {}'.format(Util.find_insert_place(range(10), 10)))
