@@ -35,14 +35,14 @@ screen = world.init_screen()
 while True:
     # collision testing
     if world.in_collision():
-        print 'Collision'
+        print('Collision')
         break
 
     # check if we have reached our goal
     vehicle_pose = world.robot.pose
     goal_distance = np.linalg.norm(vehicle_pose.position - goal)
     if goal_distance < goal_tolerance:
-        print 'Goal Reached'
+        print('Goal Reached')
         break
 
     # if we want to update vehicle commands while running world

@@ -48,7 +48,7 @@ class Util(object):
 
         start, middle, end = 0, 0, len(sorted_list) -1
         while start <= end:
-            middle = start + (end - start) / 2
+            middle = int(start + (end - start) / 2)
             if val == sorted_list[middle]:
                 return middle
             if val < sorted_list[middle]:
@@ -270,5 +270,5 @@ if __name__ == '__main__':
     waypoints, goal = PathPlanner.create_waypoints(waypoint_list)
     controller = PurePursuit(waypoints, 10, 5, 5)
 
-    print('Test find position based on s coordinate, position is {}'.format(controller._find_position_on_path(np.math.sqrt(3))))
-    print('Test binary search insertion place function: insertion place is {}'.format(Util.find_insert_place(range(10), 10)))
+    print(('Test find position based on s coordinate, position is {}'.format(controller._find_position_on_path(np.math.sqrt(3)))))
+    print(('Test binary search insertion place function: insertion place is {}'.format(Util.find_insert_place(list(range(10)), 10))))
