@@ -2,19 +2,34 @@ import json
 from time import sleep
 
 import numpy as np
+from scipy.interpolate import interp1d
 
 from controller import LogUtil, PurePursuit
 from path_planner import PathPlanner
 from world import Pose, Robot, World
 
+
 # Read in waypoints
-def get_waypoint_list():
+def get_waypoint_list(n=100):
 
     with open('path.json', 'r') as f_in:
         path = json.load(f_in)
-    waypoint_list = []
+
+    x = []
+    y = []
+
     for point in path:
-        waypoint_list.append([point['x'], point['y']])
+        x.append(point['x'])
+        y.append(point['y'])
+
+    f = interp1d(x, y, kind='cubic')
+    x_f = np.linspace(x[0], x[-1], n)
+    y_f = f(x_f)
+
+    waypoint_list = []
+    for i in range(len(x_f)):
+        waypoint_list.append([x_f[i], y_f[i]])
+
     return waypoint_list
 
 # Call pure pursuit controller
