@@ -2,34 +2,19 @@ import json
 from time import sleep
 
 import numpy as np
-from scipy.interpolate import interp1d
 
 from controller import LogUtil, PurePursuit
 from path_planner import PathPlanner
 from world import Pose, Robot, World
 
-
 # Read in waypoints
-def get_waypoint_list(n=300):
+def get_waypoint_list():
 
     with open('path.json', 'r') as f_in:
         path = json.load(f_in)
-
-    x = []
-    y = []
-
-    for point in path:
-        x.append(point['x'] + 100.)
-        y.append(point['y'] + 50.)
-
-    f = interp1d(x, y, kind='cubic')
-    x_f = np.linspace(x[0], x[-1], n)
-    y_f = f(x_f)
-
     waypoint_list = []
-    for i in range(len(x_f)):
-        waypoint_list.append([x_f[i], y_f[i]])
-
+    for point in path:
+        waypoint_list.append([point['x'] + 100., point['y'] + 40.])
     return waypoint_list
 
 # Call pure pursuit controller
@@ -38,14 +23,14 @@ waypoints, goal = PathPlanner.create_waypoints(waypoint_list)
 world = World()
 world.robot = Robot(Pose(waypoints[0].position, np.pi))
 
-max_linear_velocity = 12
+max_linear_velocity = 6
 max_angular_velocity = np.pi / 6.0
-look_ahead_dist = 0.9
+look_ahead_dist = 0.5
 controller = PurePursuit(waypoints, max_linear_velocity, max_angular_velocity, look_ahead_dist)
 
 # init pygame screen for visualization
 screen = world.init_screen()
-goal_tolerance = 2
+goal_tolerance = 3
 dt = 0.1
 while True:
 
@@ -64,6 +49,7 @@ while True:
     world.update(dt)
     # draw world
     world.draw(screen, waypoints)
+    print(world.robot.pose.position[0] - 100., world.robot.pose.position[1] - 40)
 
 # pause some time to view result
 sleep(1.0)
@@ -72,6 +58,7 @@ sleep(1.0)
 # Append a vw actuator to the robot, and set linear velocity
 
 # Get robot current pose
+
 # Input the current pose into the pure pursuit controller to get the angular velocity
 # Update the angular velocity of the appended vw acutuator 
 # Run the Morse simulator

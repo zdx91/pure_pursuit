@@ -139,9 +139,9 @@ class World(object):
 
     def __init__(
         self,
-        world_size=[10.0, 10.0],
+        world_size=[200.0, 200.0],
         robot = None,
-        px2m=100
+        px2m=5
     ):
         self.size = np.array(world_size)
         self.robot = robot
